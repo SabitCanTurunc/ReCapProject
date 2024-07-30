@@ -22,7 +22,7 @@ namespace Business.Concrete
             _brandDal = brandDal;
         }
 
-        public IResult Delete(int id)
+        public IResult DeleteById(int id)
         {
             Brand brandToDelete = _brandDal.Get(b => b.Id == id);
             _brandDal.Delete(brandToDelete);
