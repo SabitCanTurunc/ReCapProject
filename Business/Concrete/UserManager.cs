@@ -33,9 +33,13 @@ namespace Business.Concrete
 
         public IResult DeleteById(int id)
         {
-            User userTodelete= _userDal.Get(u=>u.Id == id);
+            User userTodelete = _userDal.Get(u => u.Id == id);
+            if (userTodelete == null)
+            {
+                return new ErrorResult(Messages.NotFound); // Veya uygun bir hata mesajı döndürün
+            }
             _userDal.Delete(userTodelete);
-            throw new NotImplementedException();
+            return new SuccessResult(Messages.Deleted);
         }
 
         public IDataResult<List<User>> GetAll()
@@ -45,12 +49,23 @@ namespace Business.Concrete
 
         public IDataResult<User> GetById(int id)
         {
+            var result = _userDal.Get(u => u.Id == id);
+            if (result == null)
+            {
+                return new ErrorDataResult<User>(Messages.NotFound);
+            }
 
-            return new SuccessDataResult<User>(_userDal.Get(u => u.Id == id), Messages.Listed);
+            return new SuccessDataResult<User>(result, Messages.Listed);
         }
 
         public IResult Update(User user)
         {
+            var result = _userDal.Get(u => u.Id == user.Id);
+            if (result == null)
+            {
+                return new ErrorResult(Messages.NotFound);
+            }
+
             _userDal.Update(user);
             return new SuccessResult(Messages.Modified);
         }

@@ -33,11 +33,21 @@ namespace Business.Concrete
 
         public IDataResult<List<Brand>> GetAll()
         {
-            return new SuccessDataResult<List<Brand>>(_brandDal.GetAll(), Messages.Listed);
+            var result = _brandDal.GetAll();
+            if (result == null)
+            {
+                return new ErrorDataResult<List<Brand>>(Messages.NotFound);
+            }
+            return new SuccessDataResult<List<Brand>>(result, Messages.Listed);
         }
 
         public IResult Update(Brand brand)
         {
+            var result = _brandDal.Get(u => u.Id == brand.Id);
+            if (result == null)
+            {
+                return new ErrorResult(Messages.NotFound);
+            }
             _brandDal.Update(brand);
             return new SuccessResult(Messages.Modified);
         }
@@ -46,12 +56,22 @@ namespace Business.Concrete
 
         public IDataResult<Brand> GetById(int id)
         {
+            var result = _brandDal.Get(b => b.Id == id);
+            if (result == null)
+            {
+                return new ErrorDataResult<Brand>(Messages.NotFound);
+            }
 
-            return new SuccessDataResult<Brand>(_brandDal.Get(b => b.Id == id), Messages.Listed);
+            return new SuccessDataResult<Brand>(result, Messages.Listed);
         }
 
         public IResult Add(Brand brand)
         {
+            var result = _brandDal.Get(b => b == brand);
+            if (result != null)
+            {
+                return new ErrorResult(Messages.AlreadyExist);
+            }
             _brandDal.Add(brand);
             return new SuccessResult(Messages.Added);
         }

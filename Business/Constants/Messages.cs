@@ -16,9 +16,10 @@ namespace Business.Constants
         public static string Modified = "Başarıyla güncellendi !";
         public static string AlreadyExist = "Sistemde mevcut !";
 
+        public static string NotFound = "Böyle bir bilgi yok !";
 
 
-        
+
         public static string MailAlreadyExist = " Mail sistemde mevcut !";
         public static string AlreadyRented = "Araba zaten kiralanmış. Önce Teslim ediniz !";
 

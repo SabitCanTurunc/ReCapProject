@@ -20,14 +20,17 @@ namespace WebAPI.Controllers
         }
 
         [HttpGet("getAll")]
-        public List<Car> GetAll()
+        public IActionResult GetAll()
         {
-            ICarService carService = new CarManager(new EfCarDal());
-            var result = carService.GetAll();
-            return result.Data;
-
+            var result = _carService.GetAll();
+            if (result.IsSuccess)
+            {
+                return Ok(result);
+            }
+            return BadRequest(result);
 
         }
+
         [HttpPost("add")]
         public IActionResult Add(Car car)
         {
