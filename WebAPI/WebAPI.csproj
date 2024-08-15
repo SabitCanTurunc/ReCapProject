@@ -18,4 +18,8 @@
     <ProjectReference Include="..\Entity\Entities.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Controllers\Images\" />
+  </ItemGroup>
+
 </Project>
