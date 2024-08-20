@@ -39,6 +39,8 @@ namespace Business.DependencyResloves.Autofac
             builder.RegisterType<CarImageManager>().As<ICarImageService>().SingleInstance();
             builder.RegisterType<EfCarImageDal>().As<ICarImageDal>().SingleInstance();
 
+
+
             //ASpect var mı kontrol et
             var assembly = System.Reflection.Assembly.GetExecutingAssembly();
 

@@ -13,9 +13,8 @@ ColorManager colorManager = new ColorManager(new EfColorDal());
 RentalTest();
 static void UserTest() {
     UserManager userManager = new UserManager(new EfUserDal());
-    User user1 = new User { FirstName = "can", LastName = "turunc", Email = "deneme1@deneme", Password = "124456" };
-    User user2 = new User { FirstName = "ömer", LastName = "aydin", Email = "deneme2@deneme", Password = "124456" };
-    User user3 = new User { FirstName = "berat", LastName = "durbardagı", Email = "deneme3@deneme", Password = "124456" };
+    //User user1 = new User { FirstName = "can", LastName = "turunc", Email = "deneme1@deneme", Password = "124456" };
+    
 
 
 

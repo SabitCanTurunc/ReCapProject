@@ -47,6 +47,17 @@ namespace Business.Concrete
             return new SuccessDataResult<List<User>>(_userDal.GetAll(), Messages.Listed);
         }
 
+        public IDataResult<User> GetByEmail(string email)
+        {
+            var result = _userDal.Get(u=>u.Email == email);
+            if (result == null)
+            {
+                return new ErrorDataResult<User>(Messages.NotFound);
+            }
+
+            return new SuccessDataResult<User>(result, Messages.Listed);
+        }
+
         public IDataResult<User> GetById(int id)
         {
             var result = _userDal.Get(u => u.Id == id);
@@ -56,6 +67,16 @@ namespace Business.Concrete
             }
 
             return new SuccessDataResult<User>(result, Messages.Listed);
+        }
+
+        public IDataResult<List<OperationClaim>> GetClaims(User user)
+        {
+            var result = _userDal.GetClaims(user);
+            if (result == null)
+            {
+                return new ErrorDataResult<List<OperationClaim>>(Messages.NotFound);
+            }
+            return new SuccessDataResult<List<OperationClaim>>(result, Messages.Listed);
         }
 
         public IResult Update(User user)
