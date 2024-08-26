@@ -1,76 +1,54 @@
-﻿// See https://aka.ms/new-console-template for more information
-using Business.Concrete;
-using DataAccess.Abstract;
+﻿using Business.Concrete;
+using Core.Utilities.Security.Hashing;
 using DataAccess.Concrete.EntityFramework;
-using DataAccess.Concrete.InMemory;
 using Entities.Concrete;
 
-CarManager carManager = new CarManager(new EfCarDal());
-BrandManager brandManager = new BrandManager(new EfBrandDal());
-ColorManager colorManager = new ColorManager(new EfColorDal());
-
-
-RentalTest();
-static void UserTest() {
-    UserManager userManager = new UserManager(new EfUserDal());
-    //User user1 = new User { FirstName = "can", LastName = "turunc", Email = "deneme1@deneme", Password = "124456" };
-    
-
-
-
-    foreach (User user in userManager.GetAll().Data) {
-        Console.WriteLine(user.FirstName);
-    }
-
-}
-
-static void RentalTest()
+class Program
 {
-    RentalManager rentalManager = new RentalManager(new EfRentalDal());
-    Rental rental1 = new Rental {CarId=3,CustomerId=2, RentDate = new DateOnly(2024, 8, 15) };
-    Rental return1 = new Rental {Id=6, CarId = 3, CustomerId = 2, RentDate = new DateOnly(2024, 8, 15),ReturnDate = new DateOnly(2024, 8, 16) };
-
-
-    Console.WriteLine(rentalManager.GetById(return1.Id).Data.CustomerId);
-
-    //foreach (Rental rental in rentalManager.GetAll().Data)
-    //{
-    //    Console.WriteLine(rental.CarId);
-    //}
-
-
-}
-
-static void CarTest()
-{
-    CarManager carManager = new CarManager(new EfCarDal());
-    var result = carManager.GetCarDetails();
-
-    if (result.IsSuccess == true)
+    static void Main(string[] args)
     {
-        foreach (var cars in result.Data)
+        // UserManager örneği oluşturun
+        UserManager userManager = new UserManager(new EfUserDal());
+
+        // Test şifresi
+        string testPassword = "123456";
+
+        // Şifre Hash ve Salt oluştur
+        byte[] passwordHash, passwordSalt;
+        HashingHelper.CreatePasswordHash(testPassword, out passwordHash, out passwordSalt);
+
+        // Yeni oluşturduğunuz hash ve salt ile doğrulama yapın
+        bool isCorrectPassword = HashingHelper.VerifyPasswordHash(testPassword, passwordHash, passwordSalt);
+        Console.WriteLine("Doğru şifre için doğrulama: " + isCorrectPassword); // True olmalı
+
+        // Yanlış şifre ile test
+        isCorrectPassword = HashingHelper.VerifyPasswordHash("wrongpassword", passwordHash, passwordSalt);
+        Console.WriteLine("Yanlış şifre için doğrulama: " + isCorrectPassword); // False olmalı
+
+        // Veritabanındaki kullanıcıya göre şifre kontrolü
+        var user1 = userManager.GetById(11).Data; // ID 11 olan kullanıcıyı getir
+        if (user1 != null)
         {
-            Console.WriteLine(cars.BrandName + "/" + cars.Description);
+            bool isDbPasswordCorrect = HashingHelper.VerifyPasswordHash(testPassword, user1.PasswordHash, user1.PasswordSalt);
+            Console.WriteLine("Veritabanı şifresi doğru mu: " + isDbPasswordCorrect);
+        }
+        else
+        {
+            Console.WriteLine("Kullanıcı bulunamadı.");
         }
 
-    }
-    else
-    {
-        Console.WriteLine(result.Message);
-    }
 
+        string testEmail = "deneme1@deneme";  // Var olan bir kullanıcı emaili girilmeli
 
+        var result = userManager.GetByEmail(testEmail);
+
+        if (result.IsSuccess)
+        {
+            Console.WriteLine($"User Found: {result.Data.FirstName} {result.Data.LastName}");
+        }
+        else
+        {
+            Console.WriteLine(result.Message); // Eğer kullanıcı bulunamazsa hata mesajını gösterir
+        }
+    }
 }
-
-
-
-
-
-Brand brand = new Brand { Id = 5, Name = "Hyundai" };
-
-
-
-
-Color color = new Color { Name = "Green" };
-
-

@@ -12,6 +12,7 @@ using DataAccess.Concrete.InMemory;
 using Entities.Concrete;
 using Entities.DTOs;
 using FluentValidation;
+using Microsoft.AspNetCore.Authorization;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -31,6 +32,7 @@ namespace Business.Concrete
         {
             _carDal = carDal;
         }
+
 
         [ValidationAspect(typeof(CarValidator))]
         public IResult Add(Car car)

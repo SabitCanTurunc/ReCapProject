@@ -35,8 +35,9 @@ namespace Business.Concrete
         public IDataResult<User> Login(UserForLoginDto userForLoginDto)
         {
             var userToCheck= _userService.GetByEmail(userForLoginDto.Email);
-            if (userToCheck == null)
+            if (!userToCheck.IsSuccess)
             {
+                
                 return new ErrorDataResult<User>(Messages.UserNotFound);
             }
 
@@ -51,7 +52,7 @@ namespace Business.Concrete
         public IDataResult<User> Register(UserForRegisterDto userForRegisterDto)
         {
             byte[] passwordSalt, passwordHash;
-            HashingHelper.CreatePasswordHash(userForRegisterDto.Password, out passwordSalt, out passwordHash);
+            HashingHelper.CreatePasswordHash(userForRegisterDto.Password,  out passwordHash, out passwordSalt);
 
             User user = new User
             {
@@ -71,15 +72,16 @@ namespace Business.Concrete
 
         public IResult UserExists(string email)
         {
-            if(_userService.GetByEmail(email) != null)
+            var userResult = _userService.GetByEmail(email);
+            if (userResult.Data != null) 
             {
-
                 return new ErrorResult(Messages.UserAlreadyExist);
             }
 
-            return new SuccessResult(); 
+            return new SuccessResult();
         }
 
-        
+
+
     }
 }

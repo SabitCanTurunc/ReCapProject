@@ -1,4 +1,5 @@
 ﻿using Business.Abstract;
+using Business.Constants;
 using Entities.Concrete;
 using Entities.DTOs;
 using Microsoft.AspNetCore.Http;
@@ -37,21 +38,24 @@ namespace WebAPI.Controllers
         [HttpPost("register")]
         public ActionResult Register([FromForm] UserForRegisterDto user)
         {
-            var userExists= _authService.UserExists(user.Email);
-            if (!userExists.IsSuccess) 
+            var userExists = _authService.UserExists(user.Email);
+            Console.WriteLine("laburda", userExists);
+            if (!userExists.IsSuccess)
             {
                 return BadRequest(userExists.Message);
             }
+
             var registerResult = _authService.Register(user);
-            var token= _authService.CreateAccessToken(registerResult.Data);
+            var token = _authService.CreateAccessToken(registerResult.Data);
+
             if (token.IsSuccess)
             {
                 return Ok(token.Data);
             }
+
             return BadRequest(token.Message);
-
-
         }
+
 
     }
 }
