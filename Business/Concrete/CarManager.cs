@@ -4,6 +4,7 @@ using Business.Constants;
 using Business.ValidationRules.FluentValidation;
 using Core.Aspects.Autofac.Validation;
 using Core.Aspects.Caching;
+using Core.Aspects.Transaction;
 using Core.CrossCuttingConcerns.Validation;
 using Core.Utilities.Business;
 using Core.Utilities.Results.Abstract;
@@ -37,6 +38,7 @@ namespace Business.Concrete
 
         [SecuredOperation("admin")]
         [ValidationAspect(typeof(CarValidator))]
+        [TransactionScopeAspect]
         [CacheRemoveAspect("Business.Abstract.ICarService.GetAll()")]
         public IResult Add(Car car)
         {
