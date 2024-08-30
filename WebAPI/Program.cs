@@ -6,11 +6,18 @@ using Business.DependencyResloves.Autofac;
 using Core.Utilities.Security.JWT;
 using DataAccess.Abstract;
 using Microsoft.Extensions.Configuration;
+using Core.Extensions;
 
 using DataAccess.Concrete.EntityFramework;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Core.Utilities.Security.Encryption;
+using Core.Utilities.IoC;
+using Core.DependencyResolvers;
+
+
+
+
 var builder = WebApplication.CreateBuilder(args);
 
 var configuration = builder.Configuration; // Configuration nesnesini bu þekilde alýn
@@ -20,6 +27,12 @@ builder.Host.UseServiceProviderFactory(new AutofacServiceProviderFactory());
 builder.Host.ConfigureContainer<ContainerBuilder>(builder =>
 {
     builder.RegisterModule(new AutofacBusinessModule());
+});
+
+
+builder.Services.AddDependencyResolvers(new ICoreModule[]
+{
+    new CoreModule()
 });
 
 builder.Services.AddControllers();

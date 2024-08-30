@@ -37,5 +37,7 @@ namespace Business.Constants
         public static string UserRegistered = "Kullanıcı başarıyla kaydedildi !";
 
         public static string AccesTokenCreated = "Token başarıyla oluşturuldu !";
+
+        public static string AuthorizationDenied = "Yetkiniz yok!";
     }
 }
