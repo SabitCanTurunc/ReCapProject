@@ -38,7 +38,11 @@ builder.Services.AddDependencyResolvers(new ICoreModule[]
 builder.Services.AddControllers();
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowOrigin", builder => builder.WithOrigins("http://localhost:3000"));
+    options.AddPolicy("AllowAllOrigins",
+        policy => policy
+            .AllowAnyOrigin() // Tüm kaynaklardan gelen istekleri kabul eder
+            .AllowAnyHeader() // Herhangi bir baþlýk türünü kabul eder
+            .AllowAnyMethod()); // Herhangi bir HTTP metodunu kabul eder
 });
 
 var tokenOptions = configuration.GetSection("TokenOptions").Get<TokenOptions>();
@@ -99,8 +103,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseCors(builder =>builder.WithOrigins("http://localhost:3000").AllowAnyHeader());
-
+app.UseCors("AllowAllOrigins");
 app.UseHttpsRedirection();
 
 app.UseRouting();

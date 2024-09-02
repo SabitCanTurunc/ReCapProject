@@ -5,6 +5,7 @@ using Core.Utilities.Results.Concrete;
 using DataAccess.Abstract;
 using DataAccess.Concrete.EntityFramework;
 using Entities.Concrete;
+using Entities.DTOs;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -54,6 +55,15 @@ namespace Business.Concrete
             }
             return new SuccessDataResult<List<Customer>>(result,Messages.Listed);
         }
+        public IDataResult<List<CustomerDetailDto>> GetCustomerDetailsDto()
+        {
+            var result = _customerDal.GetCustomerDetaisDto();
+            if (result==null)
+            {
+                return new ErrorDataResult<List<CustomerDetailDto>>(Messages.NotFound);
+            }
+            return new SuccessDataResult<List<CustomerDetailDto>>(result, Messages.Listed);
+        }
 
         public IDataResult<Customer> GetById(int id)
         {
@@ -75,5 +85,7 @@ namespace Business.Concrete
             _customerDal.Update(customer);
             return new SuccessResult(Messages.Modified);
         }
+
+        
     }
 }
