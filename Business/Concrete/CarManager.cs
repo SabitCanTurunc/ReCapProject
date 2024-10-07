@@ -115,6 +115,28 @@ namespace Business.Concrete
             return new SuccessDataResult<List<CarDetailDto>>(result,Messages.Listed);
         }
 
+        public IDataResult<List<CarDetailDto>> GetCarDetailsByBrandId(int id)
+        {
+            var result = _carDal.GetCarDetailsDto().Where(c=>c.BrandId==id).ToList();
+            if (result == null)
+            {
+                return new ErrorDataResult<List<CarDetailDto>>(Messages.NotFound);
+            }
+            return new SuccessDataResult<List<CarDetailDto>>(result, Messages.Listed);
+        }
+
+        public IDataResult<List<CarDetailDto>> GetCarDetailsByColorId(int id)
+        {
+            var result = _carDal.GetCarDetailsDto().Where(c => c.ColorId == id).ToList();
+            if (result.Count==0)
+            {
+                return new ErrorDataResult<List<CarDetailDto>>(Messages.NotFound);
+            }
+            return new SuccessDataResult<List<CarDetailDto>>(result, Messages.Listed);
+        }
+
+
+
         private IResult CheckCarNameExist(string name)
         {
             var result = _carDal.GetAll(c => c.Description == name).Any();

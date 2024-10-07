@@ -1,10 +1,15 @@
-﻿using Business.Abstract;
+﻿using CloudinaryDotNet;
+using CloudinaryDotNet.Actions;
+using Business.Abstract;
 using Core.Utilities.Results.Concrete;
 using DataAccess.Concrete.EntityFramework;
 using Entities.Concrete;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace WebAPI.Controllers
@@ -13,95 +18,102 @@ namespace WebAPI.Controllers
     [ApiController]
     public class CarImageController : ControllerBase
     {
-        private readonly string _imageFolderPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images");
         private readonly ICarImageService _carImageService;
+        private readonly Cloudinary _cloudinary;
 
         public CarImageController(ICarImageService carImageService)
         {
             _carImageService = carImageService;
-            EnsureImageFolderExists();
-        }
 
-        private void EnsureImageFolderExists()
-        {
-            if (!Directory.Exists(_imageFolderPath))
-            {
-                Directory.CreateDirectory(_imageFolderPath);
-            }
-        }
+            // Cloudinary ayarları
+            var account = new Account(
+                "dquzrdxog", // Cloudinary Cloud Name
+                "342841848959963",    // Cloudinary API Key
+                "Sr2y9tQN7OzUy2GXq45eyxYSVwk"  // Cloudinary API Secret
+            );
 
+            _cloudinary = new Cloudinary(account);
+        }
 
         [HttpPost("getAll")]
-        public async Task<IActionResult> GetCarImages([FromForm]int carId)
+        public IActionResult GetCarImages([FromForm] int carId)
         {
             var result = _carImageService.GetAll();
             List<CarImage> carImages = result.Data.Where(item => item.CarId == carId).ToList();
-            var carImagesBytes = new List<byte[]>();
-
-            foreach (var carImage in carImages) 
-            {
-                var filePath= carImage.ImagePath;
-                try
-                {
-                    var imageBytes = await ReadImageFromFileSystem(filePath);
-                    carImagesBytes.Add(imageBytes);
-                }
-                catch (FileNotFoundException)
-                {
-                    return NotFound($"image not found{ filePath}");
-                }
-            }
 
             if (result.IsSuccess)
             {
-                return Ok(carImagesBytes);
-            }return BadRequest(carImages);
+                return Ok(carImages);
+            }
+            return BadRequest(result);
         }
 
         [HttpPost("delete")]
-        public IActionResult DeleteImage([FromForm] int imageId)
+        public async Task<IActionResult> DeleteImage([FromForm] int imageId)
         {
-            // 1. Dosyayı dosya sisteminden sil
-            var deleteFileResult = DeleteImageFromFile(imageId);
-
-
-            // 2. Veritabanından resmi sil
-            var deleteResult = _carImageService.DeleteById(imageId);
-            if (deleteResult.IsSuccess)
+            var carImage = _carImageService.GetById(imageId);
+            if (carImage == null || carImage.Data == null || string.IsNullOrEmpty(carImage.Data.ImagePath))
             {
-                return Ok(deleteResult);
+                return NotFound("Image not found.");
             }
-            return BadRequest(deleteResult);
+
+            // Cloudinary'den resmi sil
+            var deletionParams = new DeletionParams(carImage.Data.ImagePath); // Cloudinary'deki public ID
+            var deletionResult = await _cloudinary.DestroyAsync(deletionParams);
+
+            if (deletionResult.StatusCode == System.Net.HttpStatusCode.OK)
+            {
+                // Veritabanından resmi sil
+                var deleteResult = _carImageService.DeleteById(imageId);
+                if (deleteResult.IsSuccess)
+                {
+                    return Ok(deleteResult);
+                }
+            }
+            return BadRequest("Image deletion failed.");
         }
 
-
         [HttpPost("update")]
-        public async Task<IActionResult> UpdateImage(IFormFile file, [FromForm] int imageId, [FromForm] int carId) 
+        public async Task<IActionResult> UpdateImage(IFormFile file, [FromForm] int imageId, [FromForm] int carId)
         {
             if (file == null || file.Length == 0)
             {
                 return BadRequest("No file uploaded.");
             }
 
-            var filePath = await SaveImageToFileSystem(file);
-            DeleteImageFromFile(imageId);
-
-            var carImage = new CarImage
+            var carImage = _carImageService.GetById(imageId);
+            if (carImage == null || carImage.Data == null)
             {
-                Id = imageId,
-                CarId=carId,
-                ImagePath = filePath,
-                AddingDate = DateOnly.FromDateTime(DateTime.Now),
-
-
-            };
-            var result = _carImageService.Update(carImage);
-            if (result.IsSuccess)
-            {
-                return Ok(result);
+                return NotFound("Image not found.");
             }
-            return BadRequest(result);
 
+            // Cloudinary'de mevcut resmi sil
+            var deletionParams = new DeletionParams(carImage.Data.ImagePath);
+            await _cloudinary.DestroyAsync(deletionParams);
+
+            // Yeni resmi Cloudinary'ye yükle
+            using (var stream = file.OpenReadStream())
+            {
+                var uploadParams = new ImageUploadParams()
+                {
+                    File = new FileDescription(file.FileName, stream),  // Dosya adını ve stream'i veriyoruz
+                    PublicId = Guid.NewGuid().ToString() // Yeni PublicId oluştur
+                };
+
+                var uploadResult = await _cloudinary.UploadAsync(uploadParams);
+                if (uploadResult.StatusCode == System.Net.HttpStatusCode.OK)
+                {
+                    carImage.Data.ImagePath = uploadResult.SecureUrl.ToString(); // Yeni URL'yi veritabanına kaydet
+                    carImage.Data.CarId = carId; // Gerekirse güncelle
+                    var result = _carImageService.Update(carImage.Data);
+                    if (result.IsSuccess)
+                    {
+                        return Ok(result);
+                    }
+                }
+            }
+
+            return BadRequest("Image update failed.");
         }
 
         [HttpPost("add")]
@@ -112,68 +124,34 @@ namespace WebAPI.Controllers
                 return BadRequest("No file uploaded.");
             }
 
-
-            var filePath= await SaveImageToFileSystem(file);
-
-            var carImage = new CarImage
+            // Dosyayı Stream olarak Cloudinary'ye gönderme
+            using (var stream = file.OpenReadStream())
             {
-                CarId = carId,
-                ImagePath = filePath,
-                AddingDate = DateOnly.FromDateTime(DateTime.Now),
+                var uploadParams = new ImageUploadParams()
+                {
+                    File = new FileDescription(file.FileName, stream),  // Dosya adını ve stream'i veriyoruz
+                    PublicId = Guid.NewGuid().ToString()  // Her resim için benzersiz bir PublicId oluştur
+                };
 
+                var uploadResult = await _cloudinary.UploadAsync(uploadParams);
+                if (uploadResult.StatusCode == System.Net.HttpStatusCode.OK)
+                {
+                    var carImage = new CarImage
+                    {
+                        CarId = carId,
+                        ImagePath = uploadResult.SecureUrl.ToString(), // Cloudinary'den alınan URL
+                        AddingDate = DateOnly.FromDateTime(DateTime.Now)
+                    };
 
-            };
-
-            var result = _carImageService.Add(carImage);
-            if (result.IsSuccess)
-            {
-                return Ok(result);
+                    var result = _carImageService.Add(carImage);
+                    if (result.IsSuccess)
+                    {
+                        return Ok(result);
+                    }
+                }
             }
-            return BadRequest(result);
+
+            return BadRequest("Image upload failed.");
         }
-
-        private IActionResult DeleteImageFromFile(int imageId)
-        {
-            var carImage = _carImageService.GetById(imageId);
-
-            if (carImage == null || carImage.Data == null || string.IsNullOrEmpty(carImage.Data.ImagePath))
-            {
-                return NotFound("Image not found.");
-            }
-
-            var imagePath = carImage.Data.ImagePath;
-
-            if (System.IO.File.Exists(imagePath))
-            {
-                System.IO.File.Delete(imagePath);
-                return Ok("Image deleted successfully.");
-            }
-
-            return NotFound("Image file not found on the server.");
-        }
-
-        private async Task<string> SaveImageToFileSystem(IFormFile file)
-        {
-            var fileName = Guid.NewGuid().ToString() + Path.GetExtension(file.FileName);
-
-            var filePath = Path.Combine(_imageFolderPath, fileName);
-
-
-            using (var stream = new FileStream(filePath, FileMode.Create))
-            {
-                await file.CopyToAsync(stream);
-            }
-            return filePath;
-        }
-        private async Task<byte[]> ReadImageFromFileSystem(string filePath)
-        {
-            
-            if (!System.IO.File.Exists(filePath) || filePath==null) 
-            { 
-                filePath= _carImageService.GetById(19).Data.ImagePath.ToString();
-                return await System.IO.File.ReadAllBytesAsync(filePath);
-            }
-            return await System.IO.File.ReadAllBytesAsync(filePath); }
     }
-}
- 
+    }
