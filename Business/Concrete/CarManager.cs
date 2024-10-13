@@ -36,10 +36,10 @@ namespace Business.Concrete
             _carDal = carDal;
         }
 
-        [SecuredOperation("admin")]
+        ////[SecuredOperation("admin")]
         [ValidationAspect(typeof(CarValidator))]
-        [TransactionScopeAspect]
-        [CacheRemoveAspect("Business.Abstract.ICarService.GetAll()")]
+        //[TransactionScopeAspect]
+        //[CacheRemoveAspect("Business.Abstract.ICarService.GetAll()")]
         public IResult Add(Car car)
         {
             IResult result = BusinessRules.Run(CheckCarNameExist(car.Description));
